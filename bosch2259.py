@@ -1,5 +1,5 @@
 import torch
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 import random
 from diffusers import (
     DiffusionPipeline,
@@ -14,8 +14,8 @@ from diffusers import (
 )
 import time
 
-preferred_dtype = torch.float32
-preferred_device = "cpu"
+preferred_dtype = torch.float16
+preferred_device = "cuda"
 BASE_MODEL = "SG161222/Realistic_Vision_V5.1_noVAE"
 vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse", torch_dtype=preferred_dtype).to(preferred_device)
 controlnet = ControlNetModel.from_pretrained("monster-labs/control_v1p_sd15_qrcode_monster", torch_dtype=preferred_dtype).to(preferred_device)
@@ -138,13 +138,30 @@ def inference(
     print(f"Inference ended at {end_time_formatted}, taking {end_time-start_time}s")
     return out_image["images"][0]
 
-img = inference(
-    control_image=Image.open("2259.png"),
-    prompt="detail from hieronymus bosch painting",
-    negative_prompt="low quality, ugly, wrong",
-    controlnet_conditioning_scale=0.8,
-    control_guidance_start=0,
-    control_guidance_end=1,
-    seed=123456789,
-)
-img.save("bosch2259.png")
+from datetime import datetime
+import pytz
+
+beautiful_downtown_oakland_california = pytz.timezone("America/Los_Angeles")
+
+for i in range(1000 * 1000 * 1000):
+    epoch_seconds = int(datetime.now().timestamp())
+    current_time = datetime.now(beautiful_downtown_oakland_california).strftime("%H\n%M")
+    size = (512,512)
+    time_img = Image.new("L", size, (0,))
+    atkinson = ImageFont.truetype("Atkinson-Hyperlegible-Regular-102.otf",100)
+    draw = ImageDraw.Draw(time_img)
+    draw.text((0,0), current_time, (255,), font=atkinson)
+    cropped = time_img.crop(time_img.getbbox())
+    resized = ImageOps.expand(ImageOps.pad(cropped, (max(*cropped.size), max(*cropped.size))), 1).resize(size, resample=Image.Resampling.LANCZOS)
+    enhanced = ImageEnhance.Contrast(resized).enhance(9000)
+
+    img = inference(
+        control_image=enhanced,
+        prompt="detail from hieronymus bosch painting",
+        negative_prompt="low quality, ugly, wrong",
+        controlnet_conditioning_scale=0.8,
+        control_guidance_start=0,
+        control_guidance_end=1,
+        seed=epoch_seconds,
+    )
+    img.save("time.jpg", quality=90)
