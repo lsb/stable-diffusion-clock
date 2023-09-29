@@ -142,27 +142,38 @@ from datetime import datetime
 import pytz
 
 beautiful_downtown_oakland_california = pytz.timezone("America/Los_Angeles")
+prompts = {
+  "bosch": "detail of a new hieronymus bosch painting",
+  "train": "beautiful detail of a train map",
+  "urban": "watercolor of a leafy pedestrian mall at golden hour with multiracial genderqueer joggers and bicyclists and wheelchair users talking and laughing",
+}
 
+
+atkinson = ImageFont.truetype("Atkinson-Hyperlegible-Regular-102.otf",100)
+sigfont = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",36)
 for i in range(1000 * 1000 * 1000):
     epoch_seconds = int(datetime.now().timestamp())
     current_time = datetime.now(beautiful_downtown_oakland_california).strftime("%H\n%M")
     size = (512,512)
     time_img = Image.new("L", size, (0,))
-    atkinson = ImageFont.truetype("Atkinson-Hyperlegible-Regular-102.otf",100)
     draw = ImageDraw.Draw(time_img)
     draw.text((0,0), current_time, (255,), font=atkinson)
     cropped = time_img.crop(time_img.getbbox())
-    resized = ImageOps.expand(ImageOps.pad(cropped, (max(*cropped.size), max(*cropped.size))), 1).resize(size, resample=Image.Resampling.LANCZOS)
+    resized = ImageOps.expand(ImageOps.pad(cropped, (max(*cropped.size), max(*cropped.size))), 20).resize(size, resample=Image.Resampling.LANCZOS)
     enhanced = ImageEnhance.Contrast(resized).enhance(9000)
 
-    img = inference(
-        control_image=enhanced,
-        prompt="detail from hieronymus bosch painting",
-        negative_prompt="low quality, ugly, wrong",
-        controlnet_conditioning_scale=0.8,
-        control_guidance_start=0,
-        control_guidance_end=1,
-        seed=epoch_seconds,
-    )
-    img.save("time.jpg", quality=90)
-    img.save(f"archive/{epoch_seconds}.jpg", quality=90)
+    for p in prompts:
+        img = inference(
+            control_image=enhanced,
+            prompt=prompts[p],
+            negative_prompt="low quality, ugly, wrong",
+            controlnet_conditioning_scale=0.8,
+            control_guidance_start=0,
+            control_guidance_end=1,
+            seed=epoch_seconds,
+        )
+        draw = ImageDraw.Draw(img)
+        draw.text((25,975), "Lee Butterman", (255,255,255), font=sigfont)
+        img.save(f"time.jpg", quality=80)
+        img.save(f"time-{p}.jpg", quality=80)
+        img.save(f"archive/{p}-{epoch_seconds}.jpg", quality=80)
