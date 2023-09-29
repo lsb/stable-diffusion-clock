@@ -165,3 +165,4 @@ for i in range(1000 * 1000 * 1000):
         seed=epoch_seconds,
     )
     img.save("time.jpg", quality=90)
+    img.save(f"archive/{epoch_seconds}.jpg", quality=90)
