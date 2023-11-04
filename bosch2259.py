@@ -14,11 +14,23 @@ from diffusers import (
 )
 import time
 
-preferred_dtype = torch.float16
-preferred_device = "cuda"
+preferred_dtype = torch.float32
+preferred_device = "cpu"
+torch.backends.quantized.engine = "qnnpack"
+
+cuda_is_available = torch.cuda.is_available()
+if cuda_is_available:
+    preferred_dtype = torch.float16
+    preferred_device = "cuda"
+
 BASE_MODEL = "SG161222/Realistic_Vision_V5.1_noVAE"
+
 vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse", torch_dtype=preferred_dtype).to(preferred_device)
+
 controlnet = ControlNetModel.from_pretrained("monster-labs/control_v1p_sd15_qrcode_monster", torch_dtype=preferred_dtype).to(preferred_device)
+if not cuda_is_available:
+    controlnet = torch.quantization.quantize_dynamic(controlnet, dtype=torch.qint8)
+
 main_pipe = StableDiffusionControlNetPipeline.from_pretrained(
     BASE_MODEL,
     controlnet=controlnet,
@@ -26,6 +38,9 @@ main_pipe = StableDiffusionControlNetPipeline.from_pretrained(
     safety_checker=None,
     torch_dtype=preferred_dtype,
 ).to(preferred_device)
+if not cuda_is_available:
+    main_pipe.unet = torch.quantization.quantize_dynamic(main_pipe.unet, dtype=torch.qint8)
+
 image_pipe = StableDiffusionControlNetImg2ImgPipeline(**main_pipe.components)
 
 
@@ -164,7 +179,7 @@ sigfont = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",36)
 ptsans = ImageFont.truetype("pt-sans-narrow-regular.ttf",100)
 for i in range(1000 * 1000 * 1000):
     epoch_seconds = int(datetime.now().timestamp())
-    current_time = datetime.now(beautiful_downtown_oakland_california).strftime("%H%M")
+    current_time = datetime.now(beautiful_downtown_oakland_california).strftime("%d%b").upper().strip('0')
     size = (512,512)
     time_img = Image.new("L", size, (0,))
     draw = ImageDraw.Draw(time_img)
