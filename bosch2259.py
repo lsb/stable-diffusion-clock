@@ -148,18 +148,29 @@ prompts = {
   "urban": "watercolor of a leafy pedestrian mall at golden hour with multiracial genderqueer joggers and bicyclists and wheelchair users talking and laughing",
 }
 
+prompt_conditioning = {
+  "bosch": 0.9,
+  "train": 0.93,
+  "urban": 1.05,
+}
+
+brand_prompts = {
+#  "other1": "TEXT 1",
+#  "other2": "TEXT 2",
+}
 
 atkinson = ImageFont.truetype("Atkinson-Hyperlegible-Regular-102.otf",100)
 sigfont = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",36)
+ptsans = ImageFont.truetype("pt-sans-narrow-regular.ttf",100)
 for i in range(1000 * 1000 * 1000):
     epoch_seconds = int(datetime.now().timestamp())
-    current_time = datetime.now(beautiful_downtown_oakland_california).strftime("%H\n%M")
+    current_time = datetime.now(beautiful_downtown_oakland_california).strftime("%H%M")
     size = (512,512)
     time_img = Image.new("L", size, (0,))
     draw = ImageDraw.Draw(time_img)
-    draw.text((0,0), current_time, (255,), font=atkinson)
+    draw.text((0,0), current_time, (255,), font=ptsans)
     cropped = time_img.crop(time_img.getbbox())
-    resized = ImageOps.expand(ImageOps.pad(cropped, (max(*cropped.size), max(*cropped.size))), 20).resize(size, resample=Image.Resampling.LANCZOS)
+    resized = ImageOps.expand(ImageOps.pad(cropped, (max(*cropped.size), max(*cropped.size))), 1).resize(size, resample=Image.Resampling.LANCZOS)
     enhanced = ImageEnhance.Contrast(resized).enhance(9000)
 
     for p in prompts:
@@ -167,7 +178,7 @@ for i in range(1000 * 1000 * 1000):
             control_image=enhanced,
             prompt=prompts[p],
             negative_prompt="low quality, ugly, wrong",
-            controlnet_conditioning_scale=0.8,
+            controlnet_conditioning_scale=prompt_conditioning[p],
             control_guidance_start=0,
             control_guidance_end=1,
             seed=epoch_seconds,
@@ -177,3 +188,23 @@ for i in range(1000 * 1000 * 1000):
         img.save(f"time.jpg", quality=80)
         img.save(f"time-{p}.jpg", quality=80)
         img.save(f"archive/{p}-{epoch_seconds}.jpg", quality=80)
+    for p in brand_prompts:
+        brand_img = Image.new("L", size, (0,))
+        draw = ImageDraw.Draw(brand_img)
+        draw.text((0,0), brand_prompts[p], (50,), font=ptsans)
+        cropped = brand_img.crop(brand_img.getbbox())
+        resized = ImageOps.expand(ImageOps.pad(cropped, (max(*cropped.size), max(*cropped.size))), 1).resize(size, resample=Image.Resampling.LANCZOS)
+        enhanced = ImageEnhance.Contrast(resized).enhance(9000)
+        img = inference(
+            control_image=enhanced,
+            prompt="books, literature",
+            negative_prompt="low quality, ugly, wrong",
+            controlnet_conditioning_scale=0.95,
+            control_guidance_start=0,
+            control_guidance_end=1,
+            seed=epoch_seconds,
+        )
+        draw = ImageDraw.Draw(img)
+        draw.text((25,975), "Lee Butterman", (255,255,255), font=sigfont)
+        img.save(f"time-{p}.jpg", quality=75)
+        img.save(f"archive/{p}-{epoch_seconds}.jpg", quality=75)
