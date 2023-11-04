@@ -126,7 +126,7 @@ def inference(
         image=upscaled_latents,
         guidance_scale=float(guidance_scale),
         generator=generator,
-        num_inference_steps=20,
+        num_inference_steps=12,
         strength=upscaler_strength,
         control_guidance_start=float(control_guidance_start),
         control_guidance_end=float(control_guidance_end),
