@@ -40,6 +40,7 @@ main_pipe = StableDiffusionControlNetPipeline.from_pretrained(
 ).to(preferred_device)
 if not cuda_is_available:
     main_pipe.unet = torch.quantization.quantize_dynamic(main_pipe.unet, dtype=torch.qint8)
+    main_pipe.enable_attention_slicing()
 
 image_pipe = StableDiffusionControlNetImg2ImgPipeline(**main_pipe.components)
 
