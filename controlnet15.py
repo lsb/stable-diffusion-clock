@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
+from datetime import datetime, timedelta
 
 #epoch_seconds = int(datetime.now().timestamp())
 #current_time = datetime.now(beautiful_downtown_oakland_california).strftime("%d%b").upper().strip('0')
@@ -46,22 +47,30 @@ torch.quantization.quantize_dynamic(
     qconfig_spec={torch.nn.Linear: torch.quantization.per_channel_dynamic_qconfig}
 )
 
-image = pipe(
-    #prompt="detail of a new hieronymous bosch painting, high quality",
-    #prompt="watercolor of a leafy pedestrian mall at golden hour with multiracial genderqueer joggers and bicyclists and wheelchair users talking and laughing",
-    #prompt="corgis running in the park with trees, golden hour",
-    #prompt="still life with fruit and flowers",
-    prompt="puppies in the park",
-    negative_prompt="low quality, bad quality, sketches, wrong",
-    image=mask_image,
-    num_inference_steps=20,
-    guidance_scale=7.0,
-    controlnet_conditioning_scale=0.9,
-    #control_guidance_start=0,
-    #control_guidance_end=1,
-    #cross_attention_kwargs={"scale": 1},
-    generator=torch.manual_seed(42069),
-    height=512,
-    width=512,
-).images[0]
-image.save("puppies-in-the-park-oh-no.jpg")
+pipe.unet = torch.compile(pipe.unet)
+pipe.vae = torch.compile(pipe.vae)
+pipe.text_encoder = torch.compile(pipe.text_encoder)
+print("Finished compiling and quantizing.\n")
+
+for iteration in range(86400 * 365 * 80):
+    print(datetime.now())
+    image = pipe(
+        #prompt="detail of a new hieronymous bosch painting, high quality",
+        #prompt="watercolor of a leafy pedestrian mall at golden hour with multiracial genderqueer joggers and bicyclists and wheelchair users talking and laughing",
+        #prompt="corgis running in the park with trees, golden hour",
+        #prompt="still life with fruit and flowers",
+        prompt="puppies in the park",
+        negative_prompt="low quality, bad quality, sketches, wrong",
+        image=mask_image,
+        num_inference_steps=20,
+        guidance_scale=7.0,
+        controlnet_conditioning_scale=0.9,
+        #control_guidance_start=0,
+        #control_guidance_end=1,
+        #cross_attention_kwargs={"scale": 1},
+        generator=torch.manual_seed(int(datetime.now().timestamp())),
+        height=512,
+        width=512,
+    ).images[0]
+    image.save("puppies-in-the-park-oh-no.jpg")
+
