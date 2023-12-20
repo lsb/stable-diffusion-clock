@@ -47,8 +47,10 @@ pipe.enable_attention_slicing()
 
 qint8(pipe.unet, inplace=True)
 
+print("Quantized.\n")
+
 current_denoising_steps = 20
-target_latency = 3600
+target_latency = 3000
 current_latency = 0
 half_an_hour = 3600 / 2
 target_filename = "/tmp/beauty.png"
@@ -63,6 +65,7 @@ for iteration in range(86400 * 365 * 80):
     pre_render_time = datetime.now()
     rounded_target_time = pre_render_time + timedelta(seconds=current_latency+half_an_hour)
     current_mask_image = mask_image(timestamp=rounded_target_time)
+    print(f"current_latency: {current_latency}, pre_render_time: {pre_render_time}, rounded_target_time: {rounded_target_time}, current_denoising_steps: {current_denoising_steps}\n")
 
     image = pipe(
         #prompt="detail of a new hieronymous bosch painting, high quality",
@@ -72,7 +75,7 @@ for iteration in range(86400 * 365 * 80):
         #prompt="still life with fruit and flowers",
         #prompt="cute puppies in the park",
         image=current_mask_image,
-        num_inference_steps=current_denoising_steps,
+        num_inference_steps=(current_denoising_steps if current_latency > 0 else 10),
         guidance_scale=7.0,
         controlnet_conditioning_scale=0.95,
         #control_guidance_start=0,
