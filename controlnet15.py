@@ -37,6 +37,8 @@ pipe = StableDiffusionControlNetPipeline.from_pretrained(
     safety_checker=None,
 ).to(preferred_device)
 
+pipe.enable_attention_slicing()
+
 torch.quantization.quantize_dynamic(
     pipe.unet,
     dtype=torch.qint8,
