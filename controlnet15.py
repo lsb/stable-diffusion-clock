@@ -51,7 +51,7 @@ qint8(pipe.text_encoder, inplace=True)
 print("Quantized.\n")
 
 current_denoising_steps = 1
-target_latency = 1000
+target_latency = 800
 current_latency = 0
 half_an_hour = 3600 / 2
 target_filename = "/tmp/beauty.png"
@@ -79,9 +79,9 @@ for iteration in range(86400 * 365 * 80):
         prompt=prompts[iteration % len(prompts)],
         negative_prompt=negative_prompt,
         image=current_mask_image,
-        num_inference_steps=max(current_denoising_steps, 1),
+        num_inference_steps=min(max(current_denoising_steps, 1),16),
         guidance_scale=7.0,
-        controlnet_conditioning_scale=0.55,
+        controlnet_conditioning_scale=0.6,
         #control_guidance_start=0,
         #control_guidance_end=1,
         #cross_attention_kwargs={"scale": 1},
