@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 from datetime import datetime, timedelta
-from diffusers import StableDiffusionControlNetPipeline, ControlNetModel
+from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, AutoencoderTiny
 
 ptsans = ImageFont.truetype("pt-sans-narrow-regular.ttf",50)
 atkbold = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",50)
@@ -39,23 +39,18 @@ qint8(controlnet, inplace=True)
 pipe = StableDiffusionControlNetPipeline.from_pretrained(
     "SimianLuo/LCM_Dreamshaper_v7",
     controlnet=controlnet,
+    vae=AutoencoderTiny.from_pretrained("madebyollin/taesd"),
     torch_dtype=preferred_dtype,
     safety_checker=None,
 ).to(preferred_device)
 
-pipe.enable_attention_slicing(slice_size="max")
-
 qint8(pipe.unet, inplace=True)
 qint8(pipe.text_encoder, inplace=True)
-
-pipe.vae = torch.compile(pipe.vae)
-
-#pipe.unet = torch.compile(pipe.unet)
 
 print("Quantized.\n")
 
 current_denoising_steps = 1
-target_latency = 800
+target_latency = 600
 current_latency = 0
 half_an_hour = 3600 / 2
 target_filename = "/tmp/beauty.png"
