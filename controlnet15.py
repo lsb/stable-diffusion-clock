@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 from datetime import datetime, timedelta
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, AutoencoderTiny
+from torchvision.transforms.functional import adjust_gamma
 
 ptsans = ImageFont.truetype("pt-sans-narrow-regular.ttf",50)
 atkbold = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",50)
@@ -88,7 +89,7 @@ for iteration in range(86400 * 365 * 80):
         height=512,
         width=512,
     ).images[0]
-    ImageEnhance.Contrast(ImageEnhance.Sharpness(image).enhance(2)).enhance(1.5).save(target_filename)
+    adjust_gamma(image, gamma=0.5).save(target_filename)
 
     post_render_time = datetime.now()
     current_latency = post_render_time.timestamp() - pre_render_time.timestamp()
