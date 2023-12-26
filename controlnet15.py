@@ -3,7 +3,11 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 from datetime import datetime, timedelta
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, AutoencoderTiny
-from torchvision.transforms.functional import adjust_gamma
+
+def adjust_gamma(img, gamma=0.4):
+    npim = np.array(img)
+    npim_gamma = 255.0 * (npim / 255.0) ** gamma
+    return Image.fromarray(np.uint8(npim_gamma))
 
 ptsans = ImageFont.truetype("pt-sans-narrow-regular.ttf",50)
 atkbold = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",50)
