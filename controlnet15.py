@@ -37,7 +37,7 @@ controlnet = ControlNetModel.from_pretrained(
 qint8(controlnet, inplace=True)
 
 pipe = StableDiffusionControlNetPipeline.from_pretrained(
-    "runwayml/stable-diffusion-v1-5",
+    "SimianLuo/LCM_Dreamshaper_v7",
     controlnet=controlnet,
     torch_dtype=preferred_dtype,
     safety_checker=None,
@@ -46,20 +46,28 @@ pipe = StableDiffusionControlNetPipeline.from_pretrained(
 pipe.enable_attention_slicing()
 
 qint8(pipe.unet, inplace=True)
+qint8(pipe.text_encoder, inplace=True)
 
 print("Quantized.\n")
 
-current_denoising_steps = 20
-target_latency = 3000
+current_denoising_steps = 1
+target_latency = 1000
 current_latency = 0
 half_an_hour = 3600 / 2
 target_filename = "/tmp/beauty.png"
 mask_image(timestamp=datetime.now()).save(target_filename)
 
-prompt = "watercolor of a leafy pedestrian mall at golden hour with multiracial genderqueer joggers and bicyclists and wheelchair users talking and laughing"
-negative_prompt = "low quality, ugly, wrong"
+cali1 = "desert landscape with tall mountains and cactus and boulders at sunrise with the sun on the horizon"
+cali2 = "stony river in a sunny redwood forest with salmon and deer and bears and mushrooms"
+cali3 = "cliffs at the beach, sun at the horizon, piping plovers, dolphins in the distance jumping out of the water"
 
-prompt_embeds, negative_prompt_embeds = pipe.encode_prompt(prompt=prompt, device=pipe.device, num_images_per_prompt=1, do_classifier_free_guidance=False, negative_prompt=negative_prompt)
+prompts = [
+    cali1, cali2, cali3,
+    "still life with fruit and flowers",
+    cali1, cali2, cali3,
+    "bowl of lettuces and root vegetables",
+]
+negative_prompt = "low quality, ugly, wrong"
 
 for iteration in range(86400 * 365 * 80):
     pre_render_time = datetime.now()
@@ -68,16 +76,12 @@ for iteration in range(86400 * 365 * 80):
     print(f"current_latency: {current_latency}, pre_render_time: {pre_render_time}, rounded_target_time: {rounded_target_time}, current_denoising_steps: {current_denoising_steps}\n")
 
     image = pipe(
-        #prompt="detail of a new hieronymous bosch painting, high quality",
-        prompt_embeds=prompt_embeds,
-        negative_prompt_embeds=negative_prompt_embeds,
-        #prompt="corgis running in the park with trees, golden hour",
-        #prompt="still life with fruit and flowers",
-        #prompt="cute puppies in the park",
+        prompt=prompts[iteration % len(prompts)],
+        negative_prompt=negative_prompt,
         image=current_mask_image,
-        num_inference_steps=(current_denoising_steps if current_latency > 0 else 10),
+        num_inference_steps=max(current_denoising_steps, 1),
         guidance_scale=7.0,
-        controlnet_conditioning_scale=0.95,
+        controlnet_conditioning_scale=0.55,
         #control_guidance_start=0,
         #control_guidance_end=1,
         #cross_attention_kwargs={"scale": 1},
