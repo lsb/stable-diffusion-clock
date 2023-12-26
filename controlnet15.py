@@ -93,7 +93,7 @@ for iteration in range(86400 * 365 * 80):
         height=512,
         width=512,
     ).images[0]
-    adjust_gamma(image, gamma=0.5).save(target_filename)
+    adjust_gamma(image, gamma=0.5).convert(mode="L").convert(mode="RGB").convert(mode="P").save(target_filename)
 
     post_render_time = datetime.now()
     current_latency = post_render_time.timestamp() - pre_render_time.timestamp()
