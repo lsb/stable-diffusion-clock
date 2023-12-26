@@ -43,10 +43,14 @@ pipe = StableDiffusionControlNetPipeline.from_pretrained(
     safety_checker=None,
 ).to(preferred_device)
 
-pipe.enable_attention_slicing()
+pipe.enable_attention_slicing(slice_size="max")
 
 qint8(pipe.unet, inplace=True)
 qint8(pipe.text_encoder, inplace=True)
+
+pipe.vae = torch.compile(pipe.vae)
+
+#pipe.unet = torch.compile(pipe.unet)
 
 print("Quantized.\n")
 
