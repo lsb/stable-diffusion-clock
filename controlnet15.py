@@ -89,7 +89,7 @@ for iteration in range(86400 * 365 * 80):
         height=512,
         width=512,
     ).images[0]
-    image.save(target_filename)
+    ImageEnhance.Contrast(ImageEnhance.Sharpness(image).enhance(2)).enhance(1.5).save(target_filename)
 
     post_render_time = datetime.now()
     current_latency = post_render_time.timestamp() - pre_render_time.timestamp()
