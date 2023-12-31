@@ -14,7 +14,7 @@ atkbold = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",50)
 atkreg = ImageFont.truetype("Atkinson-Hyperlegible-Regular-102.otf",50)
 
 def mask_image(timestamp):
-    mask_text = timestamp.strftime("%a\n%-I%p").upper()
+    mask_text = timestamp.strftime("%-I%p").upper()
     mask_size = (512,512)
     time_img = Image.new("L", mask_size, (0,))
     draw = ImageDraw.Draw(time_img)
