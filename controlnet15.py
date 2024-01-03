@@ -49,6 +49,8 @@ pipe = StableDiffusionControlNetPipeline.from_pretrained(
     safety_checker=None,
 ).to(preferred_device)
 
+pipe.unet.set_default_attn_processor()
+
 qint8(pipe.unet, inplace=True)
 qint8(pipe.text_encoder, inplace=True)
 
