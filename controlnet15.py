@@ -14,7 +14,7 @@ atkbold = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",50)
 atkreg = ImageFont.truetype("Atkinson-Hyperlegible-Regular-102.otf",50)
 
 def mask_image(timestamp):
-    mask_text = timestamp.strftime("%-I%p").upper()
+    mask_text = timestamp.strftime("%-I%M").upper()
     mask_size = (512,512)
     time_img = Image.new("L", mask_size, (0,))
     draw = ImageDraw.Draw(time_img)
@@ -56,10 +56,10 @@ qint8(pipe.text_encoder, inplace=True)
 
 print("Quantized.\n")
 
-current_denoising_steps = 1
+current_denoising_steps = 2
 target_latency = 900
 current_latency = 0
-half_an_hour = 3600 / 2
+rounding_minutes = 15
 target_filename = "/tmp/beauty.png"
 mask_image(timestamp=datetime.now()).save(target_filename)
 
@@ -77,7 +77,8 @@ negative_prompt = "low quality, ugly, wrong"
 
 for iteration in range(86400 * 365 * 80):
     pre_render_time = datetime.now()
-    rounded_target_time = pre_render_time + timedelta(seconds=current_latency+half_an_hour)
+    target_time_plus_midpoint = pre_render_time + timedelta(seconds=(current_latency + rounding_minutes * 60 / 2))
+    rounded_target_time = target_time_plus_midpoint - timedelta(minutes=target_time_plus_midpoint.minute - target_time_plus_midpoint.minute // rounding_minutes * rounding_minutes)
     current_mask_image = mask_image(timestamp=rounded_target_time)
     print(f"current_latency: {current_latency}, pre_render_time: {pre_render_time}, rounded_target_time: {rounded_target_time}, current_denoising_steps: {current_denoising_steps}\n")
 
@@ -87,7 +88,7 @@ for iteration in range(86400 * 365 * 80):
         image=current_mask_image,
         num_inference_steps=min(max(current_denoising_steps, 1),16),
         guidance_scale=7.0,
-        controlnet_conditioning_scale=0.55,
+        controlnet_conditioning_scale=0.5,
         #control_guidance_start=0,
         #control_guidance_end=1,
         #cross_attention_kwargs={"scale": 1},
@@ -99,5 +100,5 @@ for iteration in range(86400 * 365 * 80):
 
     post_render_time = datetime.now()
     current_latency = post_render_time.timestamp() - pre_render_time.timestamp()
-    current_denoising_steps += 1 if current_latency < target_latency else -1
+    # current_denoising_steps += 1 if current_latency < target_latency else -1 # 2 is fine lol
 
