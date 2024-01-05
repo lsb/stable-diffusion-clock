@@ -119,5 +119,3 @@ for iteration in range(86400 * 365 * 80):
 
     post_render_time = datetime.now()
     current_latency = post_render_time.timestamp() - pre_render_time.timestamp()
-    # current_denoising_steps += 1 if current_latency < target_latency else -1 # 2 is fine lol
-
