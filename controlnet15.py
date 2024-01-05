@@ -12,13 +12,22 @@ def adjust_gamma(img, gamma=0.4):
 atkbold = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",200)
 
 def mask_image(timestamp):
-    mask_text = timestamp.strftime("%-I%M").upper()
+    is_two_line = len(timestamp.strftime("%-I")) > 1
+    linesep = "\n" if is_two_line else ""
+    mask_text = timestamp.strftime(f"%-I{linesep}%p").upper() if timestamp.minute == 0 else timestamp.strftime(f"%-I{linesep}%M")
     mask_size = (512,512)
     time_img = Image.new("L", mask_size, (0,))
     draw = ImageDraw.Draw(time_img)
-    draw.text((0,0), mask_text, (255,), font=atkbold)
+    draw.multiline_text(
+        xy=(0,0), # (mask_size[0] // 2, mask_size[1] // 2),
+        text=mask_text,
+        fill=(255,),
+        font=atkbold,
+        align="center",
+        spacing=-10,
+    )
     cropped = time_img.crop(time_img.getbbox())
-    resized = ImageOps.expand(ImageOps.pad(cropped, (max(*cropped.size), max(*cropped.size))), 5).resize(mask_size, resample=Image.Resampling.LANCZOS)
+    resized = ImageOps.expand(ImageOps.pad(cropped, (max(*cropped.size), max(*cropped.size))), -10).resize(mask_size, resample=Image.Resampling.LANCZOS)
     enhanced_image = ImageEnhance.Contrast(resized).enhance(9000)
     return enhanced_image
 
