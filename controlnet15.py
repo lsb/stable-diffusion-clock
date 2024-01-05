@@ -76,14 +76,21 @@ mask_image(timestamp=datetime.now()).save(target_filename)
 
 cali1 = "desert landscape with tall mountains and cactus and boulders at sunrise with the sun on the horizon"
 cali2 = "stony river in a sunny redwood forest with salmon and deer and bears and mushrooms"
-cali3 = "cliffs at the beach, sun at the horizon, piping plovers, dolphins in the distance jumping out of the water"
+cali3 = "beach, tall cliffs, sun at the horizon, albatross eating fish, no one on the beach, boulders and tide pools in the shallow water"
+cali4 = "nighttime photo of a desert landscape with the milky way in the sky and boulders on a shallow lake bed surrounded by tall mountains"
 
 prompts = [
-    cali1, cali2, cali3,
-    "still life with fruit and flowers",
-    cali1, cali2, cali3,
-    "bowl of lettuces and root vegetables",
+    # cali1,
+    # cali2,
+    # cali3,
+    cali4,
 ]
+conditioning_scales = {
+    cali1: 0.8,
+    cali2: 0.76,
+    cali3: 0.79,
+    cali4: 0.72,
+}
 negative_prompt = "low quality, ugly, wrong"
 
 four_color_image = Image.new("P", (1,1))
@@ -102,7 +109,7 @@ for iteration in range(86400 * 365 * 80):
         image=current_mask_image,
         num_inference_steps=min(max(current_denoising_steps, 1),16),
         guidance_scale=7.0,
-        controlnet_conditioning_scale=0.5,
+        controlnet_conditioning_scale=conditioning_scales[prompts[iteration % len(prompts)]],
         #control_guidance_start=0,
         #control_guidance_end=1,
         #cross_attention_kwargs={"scale": 1},
