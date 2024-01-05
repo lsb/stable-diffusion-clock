@@ -9,9 +9,7 @@ def adjust_gamma(img, gamma=0.4):
     npim_gamma = 255.0 * (npim / 255.0) ** gamma
     return Image.fromarray(np.uint8(npim_gamma))
 
-ptsans = ImageFont.truetype("pt-sans-narrow-regular.ttf",50)
-atkbold = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",50)
-atkreg = ImageFont.truetype("Atkinson-Hyperlegible-Regular-102.otf",50)
+atkbold = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",200)
 
 def mask_image(timestamp):
     mask_text = timestamp.strftime("%-I%M").upper()
