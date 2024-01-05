@@ -13,10 +13,10 @@ atkbold = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",200)
 
 image_size = (512, 384)
 screen_size = (1100, 825)
-screen_is_four_shade_monochrome = True
+screen_is_monochrome = True
 
 def mask_image(timestamp):
-    is_two_line = len(timestamp.strftime("%-I")) > 1
+    is_two_line = False # our images are 4:3 instead of 1:1, so we have space for all on one line
     linesep = "\n" if is_two_line else ""
     mask_text = timestamp.strftime(f"%-I{linesep}%p").upper() if timestamp.minute == 0 else timestamp.strftime(f"%-I{linesep}%M")
     time_img = Image.new("L", image_size, (0,))
@@ -84,9 +84,9 @@ cali3 = "beach, tall cliffs, sun at the horizon, albatross eating fish, no one o
 cali4 = "nighttime photo of a desert landscape with the milky way in the sky and boulders on a shallow lake bed surrounded by tall mountains"
 
 prompts = [
-    # cali1,
-    # cali2,
-    # cali3,
+    cali1,
+    cali2,
+    cali3,
     cali4,
 ]
 conditioning_scales = {
@@ -124,8 +124,8 @@ for iteration in range(86400 * 365 * 80):
     image = adjust_gamma(image, gamma=0.5)
     image = ImageEnhance.Sharpness(image).enhance(5)
     image = image.resize(screen_size)
-    if screen_is_four_shade_monochrome:
-        image = image.quantize(palette=four_color_image)
+    if screen_is_monochrome:
+        image = image.quantize()
     image.save(target_filename)
 
     post_render_time = datetime.now()
