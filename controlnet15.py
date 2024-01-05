@@ -43,32 +43,36 @@ def qint8(m, per_channel=True, inplace=False):
 preferred_dtype = torch.float32
 preferred_device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
 torch.backends.quantized.engine = "qnnpack"
-unet_preferred_dtype = torch.qint8
 
 controlnet = ControlNetModel.from_pretrained(
     "monster-labs/control_v1p_sd15_qrcode_monster",
     torch_dtype=preferred_dtype,
 ).to(preferred_device)
-qint8(controlnet, inplace=True)
+#qint8(controlnet, inplace=True)
 
 pipe = StableDiffusionControlNetPipeline.from_pretrained(
     "SimianLuo/LCM_Dreamshaper_v7",
     controlnet=controlnet,
-    vae=AutoencoderTiny.from_pretrained("madebyollin/taesd"),
+    #vae=AutoencoderTiny.from_pretrained("madebyollin/taesd"),
     torch_dtype=preferred_dtype,
     safety_checker=None,
 ).to(preferred_device)
 
+pipe.vae.set_default_attn_processor()
 pipe.unet.set_default_attn_processor()
+
+#qint8(pipe.unet, inplace=True)
+#qint8(pipe.text_encoder, inplace=True)
+#qint8(pipe.vae, inplace=True)
 
 if preferred_device == "cpu":
     pipe.unet = torch.compile(pipe.unet, fullgraph=True)
     pipe.vae = torch.compile(pipe.vae, fullgraph=True)
 
-print("Quantized.\n")
 
-current_denoising_steps = 2
-target_latency = 900
+#print("Quantized.\n")
+
+current_denoising_steps = 4
 current_latency = 0
 rounding_minutes = 15
 target_filename = "/tmp/beauty.png"
