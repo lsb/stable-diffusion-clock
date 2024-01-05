@@ -38,7 +38,7 @@ def qint8(m, per_channel=True, inplace=False):
 
 
 preferred_dtype = torch.float32
-preferred_device = "cpu"
+preferred_device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
 torch.backends.quantized.engine = "qnnpack"
 unet_preferred_dtype = torch.qint8
 
@@ -58,8 +58,9 @@ pipe = StableDiffusionControlNetPipeline.from_pretrained(
 
 pipe.unet.set_default_attn_processor()
 
-qint8(pipe.unet, inplace=True)
-qint8(pipe.text_encoder, inplace=True)
+if preferred_device == "cpu":
+    pipe.unet = torch.compile(pipe.unet, fullgraph=True)
+    pipe.vae = torch.compile(pipe.vae, fullgraph=True)
 
 print("Quantized.\n")
 
