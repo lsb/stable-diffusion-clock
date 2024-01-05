@@ -11,15 +11,18 @@ def adjust_gamma(img, gamma=0.4):
 
 atkbold = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",200)
 
+image_size = (512, 384)
+screen_size = (1100, 825)
+screen_is_four_shade_monochrome = True
+
 def mask_image(timestamp):
     is_two_line = len(timestamp.strftime("%-I")) > 1
     linesep = "\n" if is_two_line else ""
     mask_text = timestamp.strftime(f"%-I{linesep}%p").upper() if timestamp.minute == 0 else timestamp.strftime(f"%-I{linesep}%M")
-    mask_size = (512,512)
-    time_img = Image.new("L", mask_size, (0,))
+    time_img = Image.new("L", image_size, (0,))
     draw = ImageDraw.Draw(time_img)
     draw.multiline_text(
-        xy=(0,0), # (mask_size[0] // 2, mask_size[1] // 2),
+        xy=(0,0),
         text=mask_text,
         fill=(255,),
         font=atkbold,
@@ -27,7 +30,7 @@ def mask_image(timestamp):
         spacing=-10,
     )
     cropped = time_img.crop(time_img.getbbox())
-    resized = ImageOps.expand(ImageOps.pad(cropped, (max(*cropped.size), max(*cropped.size))), -10).resize(mask_size, resample=Image.Resampling.LANCZOS)
+    resized = ImageOps.expand(ImageOps.pad(cropped, (max(*cropped.size), max(*cropped.size))), -10).resize(image_size, resample=Image.Resampling.LANCZOS)
     enhanced_image = ImageEnhance.Contrast(resized).enhance(9000)
     return enhanced_image
 
@@ -83,6 +86,9 @@ prompts = [
 ]
 negative_prompt = "low quality, ugly, wrong"
 
+four_color_image = Image.new("P", (1,1))
+four_color_image.putpalette([0,0,0,64,64,64,128,128,128,192,192,192,255,255,255])
+
 for iteration in range(86400 * 365 * 80):
     pre_render_time = datetime.now()
     target_time_plus_midpoint = pre_render_time + timedelta(seconds=(current_latency + rounding_minutes * 60 / 2))
@@ -101,10 +107,15 @@ for iteration in range(86400 * 365 * 80):
         #control_guidance_end=1,
         #cross_attention_kwargs={"scale": 1},
         generator=torch.manual_seed(int(pre_render_time.timestamp())),
-        height=512,
-        width=512,
+        height=image_size[1],
+        width=image_size[0],
     ).images[0]
-    adjust_gamma(image, gamma=0.5).convert(mode="L").convert(mode="RGB").convert(mode="P").save(target_filename)
+    image = adjust_gamma(image, gamma=0.5)
+    image = ImageEnhance.Sharpness(image).enhance(5)
+    image = image.resize(screen_size)
+    if screen_is_four_shade_monochrome:
+        image = image.quantize(palette=four_color_image)
+    image.save(target_filename)
 
     post_render_time = datetime.now()
     current_latency = post_render_time.timestamp() - pre_render_time.timestamp()
