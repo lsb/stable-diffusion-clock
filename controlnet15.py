@@ -11,7 +11,7 @@ def adjust_gamma(img, gamma=0.4):
 
 atkbold = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",200)
 
-image_size = (512, 384)
+image_size = (480, 360)
 screen_size = (1100, 825)
 screen_is_monochrome = True
 
@@ -72,7 +72,7 @@ if preferred_device == "cpu":
 
 #print("Quantized.\n")
 
-current_denoising_steps = 4
+current_denoising_steps = 3
 current_latency = 0
 rounding_minutes = 15
 target_filename = "/tmp/beauty.png"
