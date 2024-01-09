@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 from datetime import datetime, timedelta
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, AutoencoderTiny
+from tqdm import tqdm
 
 def adjust_gamma(img, gamma=0.4):
     npim = np.array(img)
@@ -10,10 +11,14 @@ def adjust_gamma(img, gamma=0.4):
     return Image.fromarray(np.uint8(npim_gamma))
 
 atkbold = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",200)
+atkbold_smol = ImageFont.truetype("Atkinson-Hyperlegible-Bold-102.otf",40)
 
 image_size = (480, 360)
 screen_size = (1100, 825)
 screen_is_monochrome = True
+
+demo_mode = True
+keep_fp32_on_cpu = False
 
 def mask_image(timestamp):
     is_two_line = False # our images are 4:3 instead of 1:1, so we have space for all on one line
@@ -44,11 +49,16 @@ preferred_dtype = torch.float32
 preferred_device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
 torch.backends.quantized.engine = "qnnpack"
 
+if demo_mode:
+    preferred_device = "cpu"
+    preferred_dtype = torch.float32
+
 controlnet = ControlNetModel.from_pretrained(
     "monster-labs/control_v1p_sd15_qrcode_monster",
     torch_dtype=preferred_dtype,
 ).to(preferred_device)
-#qint8(controlnet, inplace=True)
+if preferred_device == "cpu" and not keep_fp32_on_cpu:
+    qint8(controlnet, inplace=True)
 
 pipe = StableDiffusionControlNetPipeline.from_pretrained(
     "SimianLuo/LCM_Dreamshaper_v7",
@@ -61,16 +71,11 @@ pipe = StableDiffusionControlNetPipeline.from_pretrained(
 pipe.vae.set_default_attn_processor()
 pipe.unet.set_default_attn_processor()
 
-#qint8(pipe.unet, inplace=True)
-#qint8(pipe.text_encoder, inplace=True)
-#qint8(pipe.vae, inplace=True)
+if preferred_device == "cpu" and not keep_fp32_on_cpu:
+    qint8(pipe.unet, inplace=True)
+    qint8(pipe.text_encoder, inplace=True)
+    qint8(pipe.vae, inplace=True)
 
-if preferred_device == "cpu":
-    pipe.unet = torch.compile(pipe.unet, fullgraph=True)
-    pipe.vae = torch.compile(pipe.vae, fullgraph=True)
-
-
-#print("Quantized.\n")
 
 current_denoising_steps = 3
 current_latency = 0
@@ -100,8 +105,20 @@ negative_prompt = "low quality, ugly, wrong"
 four_color_image = Image.new("P", (1,1))
 four_color_image.putpalette([0,0,0,64,64,64,128,128,128,192,192,192,255,255,255])
 
-for iteration in range(86400 * 365 * 80):
-    pre_render_time = datetime.now()
+if demo_mode:
+    iteration_range = range(4 * 4 * 24)
+else:
+    iteration_range = range(86400 * 365 * 80)
+
+for iteration in tqdm(iteration_range):
+    if demo_mode:
+        synthetic_time = datetime.fromtimestamp(iteration * 15 * 60 // 4 + 8 * 3600 - 2 * 15 * 60 // 4 + 1)
+        target_filename = f"face-render-{iteration:06}.png"
+        current_latency = 0
+        pre_render_time = synthetic_time
+    else:
+        pre_render_time = datetime.now()
+
     target_time_plus_midpoint = pre_render_time + timedelta(seconds=(current_latency + rounding_minutes * 60 / 2))
     rounded_target_time = target_time_plus_midpoint - timedelta(minutes=target_time_plus_midpoint.minute - target_time_plus_midpoint.minute // rounding_minutes * rounding_minutes)
     current_mask_image = mask_image(timestamp=rounded_target_time)
@@ -124,8 +141,9 @@ for iteration in range(86400 * 365 * 80):
     image = adjust_gamma(image, gamma=0.5)
     image = ImageEnhance.Sharpness(image).enhance(5)
     image = image.resize(screen_size)
-    if screen_is_monochrome:
-        image = image.quantize()
+    if demo_mode:
+        draw = ImageDraw.Draw(image)
+        draw.text((60, screen_size[1]-60), f"leebutterman.com", fill=(255,255,255), font=atkbold_smol)
     image.save(target_filename)
 
     post_render_time = datetime.now()
