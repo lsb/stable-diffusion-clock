@@ -35,7 +35,24 @@ def mask_image(timestamp):
         spacing=-10,
     )
     cropped = time_img.crop(time_img.getbbox())
-    resized = ImageOps.expand(ImageOps.pad(cropped, (max(*cropped.size), max(*cropped.size))), -10).resize(image_size, resample=Image.Resampling.LANCZOS)
+
+    # Calculate aspect ratios
+    image_aspect_ratio = image_size[0] / image_size[1]
+    cropped_aspect_ratio = cropped.size[0] / cropped.size[1]
+
+    # Determine which dimension of cropped.size is larger
+    if cropped_aspect_ratio > image_aspect_ratio:
+        # Calculate new dimensions for padding
+        new_width = int(cropped.size[1] * image_aspect_ratio)
+        new_height = cropped.size[1]
+    else:
+        new_width = cropped.size[0]
+        new_height = int(cropped.size[0] / image_aspect_ratio)
+
+    # Pad the image to the desired aspect ratio
+    padded = ImageOps.pad(cropped, (new_width, new_height))
+
+    resized = padded.resize(image_size, resample=Image.Resampling.LANCZOS)
     enhanced_image = ImageEnhance.Contrast(resized).enhance(9000)
     return enhanced_image
 
