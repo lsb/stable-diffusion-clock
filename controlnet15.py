@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 from datetime import datetime, timedelta
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, AutoencoderTiny
+from diffusers.models.attention_processor import SlicedAttnProcessor
 from tqdm import tqdm
 
 def adjust_gamma(img, gamma=0.4):
@@ -85,8 +86,8 @@ pipe = StableDiffusionControlNetPipeline.from_pretrained(
     safety_checker=None,
 ).to(preferred_device)
 
-pipe.vae.set_default_attn_processor()
-pipe.unet.set_default_attn_processor()
+pipe.vae.set_attn_processor(SlicedAttnProcessor(4))
+pipe.unet.set_attn_processor(SlicedAttnProcessor(4))
 
 if preferred_device == "cpu" and not keep_fp32_on_cpu:
     qint8(pipe.unet, inplace=True)
