@@ -120,9 +120,6 @@ conditioning_scales = {
 }
 negative_prompt = "low quality, ugly, wrong"
 
-four_color_image = Image.new("P", (1,1))
-four_color_image.putpalette([0,0,0,64,64,64,128,128,128,192,192,192,255,255,255])
-
 if demo_mode:
     iteration_range = range(4 * 4 * 24)
 else:
